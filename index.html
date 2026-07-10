@@ -7,6 +7,7 @@
 <style>
   :root {
     --surface-1:      #fcfcfb;
+    --surface-2:      #f3f2ef;
     --page-plane:     #f9f9f7;
     --text-primary:   #0b0b0b;
     --text-secondary: #52514e;
@@ -15,6 +16,7 @@
     --baseline:       #c3c2b7;
     --border:         rgba(11,11,11,0.10);
     --series-blue:    #2a78d6;
+    --series-blue-soft: #cde2fb;
     --status-good:    #0ca30c;
     --status-critical:#d03b3b;
     --status-good-bg: #eaf7ea;
@@ -23,6 +25,7 @@
   @media (prefers-color-scheme: dark) {
     :root {
       --surface-1:      #1a1a19;
+      --surface-2:      #232322;
       --page-plane:     #0d0d0d;
       --text-primary:   #ffffff;
       --text-secondary: #c3c2b7;
@@ -31,6 +34,7 @@
       --baseline:       #383835;
       --border:         rgba(255,255,255,0.10);
       --series-blue:    #3987e5;
+      --series-blue-soft: #184f95;
       --status-good:    #0ca30c;
       --status-critical:#e66767;
       --status-good-bg: rgba(12,163,12,0.12);
@@ -43,78 +47,100 @@
     background: var(--page-plane);
     color: var(--text-primary);
     margin: 0;
-    padding: 32px 20px 60px;
+    padding: 40px 24px 72px;
+    -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 980px; margin: 0 auto; }
-  .head h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
-  .head p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  .head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .head h1 { font-size: 21px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .head p { margin: 4px 0 0; color: var(--text-secondary); font-size: 13.5px; }
 
   .filters {
-    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 16px; margin: 20px 0 28px;
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 18px; margin-bottom: 28px;
   }
-  .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .filter-label { font-size: 12px; color: var(--text-muted); margin-right: 4px; }
+  .filter-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .filter-label { font-size: 12px; color: var(--text-muted); margin-right: 6px; text-transform: uppercase; letter-spacing: .04em; }
   .chip {
-    font-size: 13px; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+    font-size: 13px; padding: 6px 13px; border-radius: 20px; border: 1px solid var(--border);
     background: transparent; color: var(--text-secondary); cursor: pointer; user-select: none;
+    transition: background .12s, color .12s, border-color .12s;
   }
   .chip.active { background: var(--series-blue); color: #fff; border-color: var(--series-blue); }
-  .chip:hover { border-color: var(--series-blue); }
+  .chip:hover:not(.active) { border-color: var(--series-blue); color: var(--text-primary); }
 
   .kpis { display: flex; gap: 14px; margin-bottom: 32px; flex-wrap: wrap; }
-  .kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; flex: 1; min-width: 200px; }
-  .kpi .lbl { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
-  .kpi .val { font-size: 34px; font-weight: 600; letter-spacing: -0.01em; }
-  .kpi .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; flex: 1; min-width: 190px; }
+  .kpi .lbl { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 8px; }
+  .kpi .val { font-size: 32px; font-weight: 600; letter-spacing: -0.015em; line-height: 1; }
+  .kpi .sub { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
 
-  .section { margin-bottom: 40px; }
-  .section h2 { font-size: 15px; font-weight: 600; margin: 0 0 3px; }
-  .section .sub { font-size: 13px; color: var(--text-muted); margin: 0 0 16px; }
+  .section { margin-bottom: 44px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+  .section h2 { font-size: 14px; font-weight: 600; margin: 0; text-transform: uppercase; letter-spacing: .03em; color: var(--text-secondary); }
+  .section .sub { font-size: 12.5px; color: var(--text-muted); margin: 2px 0 0; }
 
-  .bars { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; }
-  .bar-row { display: flex; align-items: center; gap: 12px; padding: 5px 0; }
+  .panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; }
+
+  /* leads line chart */
+  .linechart-wrap { position: relative; }
+  .linechart-tooltip {
+    position: absolute; pointer-events: none; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; font-size: 12px; color: var(--text-primary); white-space: nowrap;
+    transform: translate(-50%, -115%); display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .linechart-tooltip .t-date { color: var(--text-muted); }
+
+  /* embudo bars */
+  .bar-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+  .bar-row.zero { opacity: .45; }
   .bar-name { width: 190px; flex-shrink: 0; font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bar-track { flex: 1; position: relative; height: 22px; }
-  .bar-fill { position: absolute; left: 0; top: 3px; height: 16px; border-radius: 4px; background: var(--series-blue); min-width: 3px; }
-  .bar-val { width: 64px; text-align: right; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .bar-track { flex: 1; position: relative; height: 20px; background: var(--surface-2); border-radius: 4px; }
+  .bar-fill { position: absolute; left: 0; top: 2px; height: 16px; border-radius: 4px; background: var(--series-blue); min-width: 3px; }
+  .bar-val { width: 60px; text-align: right; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
-  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
-  .card .plat { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
-  .card .plat .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--series-blue); flex-shrink: 0; }
-  .card .metric-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; }
-  .card .metric-row .m-lbl { font-size: 12px; color: var(--text-muted); }
-  .card .metric-row .m-val { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .delta { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 20px; margin-left: 6px; }
+  /* social cards */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+  .card.empty { opacity: .55; }
+  .card .plat { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .card .plat .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--series-blue); flex-shrink: 0; }
+  .card .acct-name { font-size: 11.5px; color: var(--text-muted); margin-bottom: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-top: 1px solid var(--gridline); }
+  .card .metric-row:first-of-type { border-top: none; }
+  .card .m-lbl { font-size: 12px; color: var(--text-muted); }
+  .card .m-right { display: flex; align-items: center; gap: 8px; }
+  .card .m-val { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .card .m-spark { width: 46px; height: 18px; flex-shrink: 0; }
+  .delta { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
   .delta.good { color: var(--status-good); background: var(--status-good-bg); }
   .delta.bad { color: var(--status-critical); background: var(--status-crit-bg); }
+  .no-data-note { font-size: 11.5px; color: var(--text-muted); margin-top: 10px; font-style: italic; }
 
-  .muted-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .muted-chip { font-size: 12px; color: var(--text-muted); background: var(--surface-1); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; }
-
-  .foot { font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--gridline); padding-top: 14px; margin-top: 8px; }
-  .loading, .error { padding: 40px; text-align: center; color: var(--text-muted); }
+  .foot { font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--gridline); padding-top: 16px; margin-top: 8px; }
+  .loading, .error { padding: 60px; text-align: center; color: var(--text-muted); }
   .error { color: var(--status-critical); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="head">
-    <h1>AECODE — Growth Dashboard</h1>
-    <p>Leads, embudo comercial y redes sociales — fuente: GoHighLevel en vivo (AECODE VENTAS)</p>
+    <div>
+      <h1>AECODE — Growth Dashboard</h1>
+      <p>Leads, embudo comercial y redes sociales — fuente: GoHighLevel en vivo (AECODE VENTAS)</p>
+    </div>
   </div>
 
   <div class="filters">
     <div class="filter-group">
-      <span class="filter-label">Rango:</span>
+      <span class="filter-label">Rango</span>
       <button class="chip" data-days="7">7 días</button>
       <button class="chip" data-days="30">30 días</button>
       <button class="chip" data-days="90">90 días</button>
     </div>
     <div class="filter-group" id="platform-filters">
-      <span class="filter-label">Redes:</span>
+      <span class="filter-label">Redes</span>
       <button class="chip active" data-platform="">Todas</button>
       <button class="chip" data-platform="facebook">Facebook</button>
       <button class="chip" data-platform="instagram">Instagram</button>
@@ -150,9 +176,9 @@
       load();
     });
   });
-  // marca "7 días" activo por defecto
   document.querySelector('[data-days="7"]').classList.add('active');
 
+  function fmt(n) { return (n || 0).toLocaleString('es-PE'); }
   function deltaSpan(v) {
     const n = parseFloat(v);
     if (!n || isNaN(n)) return '';
@@ -160,60 +186,156 @@
     const sign = n > 0 ? '+' : '';
     return `<span class="delta ${cls}">${sign}${n.toFixed(1)}%</span>`;
   }
-  function fmt(n) { return (n || 0).toLocaleString('es-PE'); }
+
+  // --- sparkline SVG (mini, sin ejes, solo tendencia) ---
+  function sparkline(values) {
+    if (!values || values.length < 2 || values.every(v => v === 0)) {
+      return `<svg class="m-spark" viewBox="0 0 46 18"><line x1="0" y1="15" x2="46" y2="15" stroke="var(--gridline)" stroke-width="1"/></svg>`;
+    }
+    const max = Math.max(...values, 1);
+    const w = 46, h = 18, pad = 2;
+    const step = (w - pad * 2) / (values.length - 1);
+    const pts = values.map((v, i) => [pad + i * step, h - pad - (v / max) * (h - pad * 2)]);
+    const path = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    const last = pts[pts.length - 1];
+    return `<svg class="m-spark" viewBox="0 0 ${w} ${h}">
+      <path d="${path}" fill="none" stroke="var(--series-blue)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2" fill="var(--series-blue)"/>
+    </svg>`;
+  }
+
+  // --- gráfico de línea principal: leads por día/semana ---
+  function renderLeadsChart(container, buckets) {
+    const w = 960, h = 200, padL = 8, padR = 8, padT = 16, padB = 28;
+    const values = buckets.map(b => b.total);
+    const max = Math.max(...values, 1);
+    const n = values.length;
+    const stepX = (w - padL - padR) / Math.max(n - 1, 1);
+    const y = (v) => h - padB - (v / max) * (h - padT - padB);
+    const x = (i) => padL + i * stepX;
+    const pts = values.map((v, i) => [x(i), y(v)]);
+    const linePath = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+    const areaPath = linePath + ` L${pts[pts.length-1][0].toFixed(1)},${h-padB} L${pts[0][0].toFixed(1)},${h-padB} Z`;
+
+    const gridY = [0, 0.5, 1].map(f => h - padB - f * (h - padT - padB));
+    const gridLines = gridY.map(gy => `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${w-padR}" y2="${gy.toFixed(1)}" stroke="var(--gridline)" stroke-width="1"/>`).join('');
+
+    const lastVal = values[values.length - 1];
+    const lastPt = pts[pts.length - 1];
+
+    const showEveryNth = n > 20 ? Math.ceil(n / 10) : 1;
+    const labels = buckets.map((b, i) => (i % showEveryNth === 0 || i === n - 1) ?
+      `<text x="${x(i).toFixed(1)}" y="${h - 8}" font-size="11" fill="var(--text-muted)" text-anchor="middle">${b.label}</text>` : '').join('');
+
+    container.innerHTML = `
+      <div class="linechart-wrap">
+        <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; display:block; overflow: visible;">
+          ${gridLines}
+          <path d="${areaPath}" fill="var(--series-blue-soft)" opacity="0.35"/>
+          <path d="${linePath}" fill="none" stroke="var(--series-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="${lastPt[0].toFixed(1)}" cy="${lastPt[1].toFixed(1)}" r="4" fill="var(--series-blue)" stroke="var(--surface-1)" stroke-width="2"/>
+          <text x="${lastPt[0].toFixed(1)}" y="${(lastPt[1]-10).toFixed(1)}" font-size="12" font-weight="600" fill="var(--text-primary)" text-anchor="end">${fmt(lastVal)}</text>
+          ${labels}
+          <g id="hover-dots">
+            ${pts.map((p, i) => `<circle data-i="${i}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="10" fill="transparent" style="cursor:pointer"/>`).join('')}
+          </g>
+        </svg>
+        <div class="linechart-tooltip" id="lc-tooltip"></div>
+      </div>
+    `;
+
+    const tooltip = container.querySelector('#lc-tooltip');
+    const svg = container.querySelector('svg');
+    container.querySelectorAll('#hover-dots circle').forEach((dot) => {
+      dot.addEventListener('mouseenter', (e) => {
+        const i = parseInt(dot.dataset.i, 10);
+        const rect = svg.getBoundingClientRect();
+        const scale = rect.width / w;
+        tooltip.style.left = (pts[i][0] * scale) + 'px';
+        tooltip.style.top = (pts[i][1] * scale) + 'px';
+        tooltip.innerHTML = `<span class="t-date">${buckets[i].label}</span> · <strong>${fmt(values[i])}</strong> leads`;
+        tooltip.style.display = 'block';
+      });
+      dot.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+    });
+  }
 
   function render(data) {
     const totalOps = data.pipelines.reduce((s, p) => s + p.total, 0);
     const maxP = Math.max(1, ...data.pipelines.map(p => p.total));
+    const nonZeroPipelines = data.pipelines.filter(p => p.total > 0);
+    const zeroPipelines = data.pipelines.filter(p => p.total === 0);
 
-    const barsHtml = data.pipelines.map(p => `
-      <div class="bar-row" title="${p.name}: ${fmt(p.total)} oportunidades">
+    const barsHtml = [...nonZeroPipelines, ...zeroPipelines].map(p => `
+      <div class="bar-row ${p.total === 0 ? 'zero' : ''}" title="${p.name}: ${fmt(p.total)} oportunidades">
         <div class="bar-name">${p.name}</div>
         <div class="bar-track"><div class="bar-fill" style="width:${p.total / maxP * 100}%"></div></div>
         <div class="bar-val">${fmt(p.total)}</div>
       </div>
     `).join('');
 
-    const activeSocial = data.social.filter(s => (s.totals.impressions || 0) + (s.totals.followers || 0) + (s.totals.posts || 0) > 0);
-    const inactiveSocial = data.social.filter(s => !activeSocial.includes(s));
-
-    const cardsHtml = activeSocial.map(s => {
+    const cardsHtml = data.social.map(s => {
       const reach = (s.breakdowns.reach && s.breakdowns.reach.total) || 0;
       const reachChange = (s.breakdowns.reach && s.breakdowns.reach.totalChange) || 0;
       const impChange = (s.breakdowns.impressions && s.breakdowns.impressions.totalChange) || 0;
       const engPlatform = s.breakdowns.engagement && s.breakdowns.engagement[s.platform];
       const engChange = engPlatform ? engPlatform.change : 0;
+      const engagement = (s.totals.likes || 0) + (s.totals.comments || 0);
+      const noData = (s.totals.impressions || 0) === 0 && (s.totals.followers || 0) === 0 && engagement === 0 && reach === 0;
       return `
-        <div class="card">
-          <div class="plat"><span class="dot"></span>${s.platform} · <span style="color:var(--text-muted); font-weight:400;">${s.name}</span></div>
-          ${s.totals.followers ? `<div class="metric-row"><span class="m-lbl">Seguidores</span><span class="m-val">${fmt(s.totals.followers)}</span></div>` : ''}
-          <div class="metric-row"><span class="m-lbl">Impresiones</span><span class="m-val">${fmt(s.totals.impressions)} ${deltaSpan(impChange)}</span></div>
-          <div class="metric-row"><span class="m-lbl">Alcance</span><span class="m-val">${fmt(reach)} ${deltaSpan(reachChange)}</span></div>
-          <div class="metric-row"><span class="m-lbl">Engagement</span><span class="m-val">${fmt(s.totals.likes + s.totals.comments)} ${deltaSpan(engChange)}</span></div>
+        <div class="card ${noData ? 'empty' : ''}">
+          <div class="plat"><span class="dot"></span>${s.platform}</div>
+          <div class="acct-name">${s.name}</div>
+          <div class="metric-row">
+            <span class="m-lbl">Seguidores</span>
+            <span class="m-right">${sparkline(s.series.followers)}<span class="m-val">${fmt(s.totals.followers)}</span></span>
+          </div>
+          <div class="metric-row">
+            <span class="m-lbl">Impresiones</span>
+            <span class="m-right">${sparkline(s.series.impressions)}<span class="m-val">${fmt(s.totals.impressions)}</span>${deltaSpan(impChange)}</span>
+          </div>
+          <div class="metric-row">
+            <span class="m-lbl">Alcance</span>
+            <span class="m-right"><span class="m-val">${fmt(reach)}</span>${deltaSpan(reachChange)}</span>
+          </div>
+          <div class="metric-row">
+            <span class="m-lbl">Engagement</span>
+            <span class="m-right">${sparkline(s.series.likes)}<span class="m-val">${fmt(engagement)}</span>${deltaSpan(engChange)}</span>
+          </div>
+          ${noData ? '<div class="no-data-note">GHL no reporta datos para esta cuenta en este rango</div>' : ''}
         </div>
       `;
     }).join('');
 
-    const mutedHtml = inactiveSocial.map(s => `<div class="muted-chip">${s.platform} · ${s.name} — sin actividad en este rango</div>`).join('');
-
     document.getElementById('content').innerHTML = `
       <div class="kpis">
         <div class="kpi"><div class="lbl">Contactos totales en CRM</div><div class="val">${fmt(data.totalContacts)}</div><div class="sub">Base histórica acumulada</div></div>
+        <div class="kpi"><div class="lbl">Leads nuevos</div><div class="val">${fmt(data.newLeadsInRange)}</div><div class="sub">En los últimos ${data.rangeDays} días</div></div>
         <div class="kpi"><div class="lbl">Oportunidades activas</div><div class="val">${fmt(totalOps)}</div><div class="sub">Sumando ${data.pipelines.length} pipelines</div></div>
-        <div class="kpi"><div class="lbl">Rango analizado</div><div class="val">${data.rangeDays}d</div><div class="sub">vs. los ${data.rangeDays} días previos</div></div>
       </div>
+
       <div class="section">
-        <h2>Embudo por pipeline</h2>
-        <p class="sub">Oportunidades activas por pipeline, de mayor a menor volumen (estado actual)</p>
-        <div class="bars">${barsHtml}</div>
+        <div class="section-head">
+          <div><h2>Leads por día</h2><p class="sub">Contactos nuevos creados en GHL, día a día dentro del rango seleccionado</p></div>
+        </div>
+        <div class="panel" id="leads-chart"></div>
       </div>
+
       <div class="section">
-        <h2>Redes sociales</h2>
-        <p class="sub">Últimos ${data.rangeDays} días vs. los ${data.rangeDays} días previos</p>
-        <div class="cards">${cardsHtml || '<p class="sub">Sin actividad en el rango/redes seleccionadas.</p>'}</div>
-        ${mutedHtml ? `<div class="muted-list">${mutedHtml}</div>` : ''}
+        <div class="section-head">
+          <div><h2>Embudo por pipeline</h2><p class="sub">Oportunidades activas por pipeline, de mayor a menor volumen (estado actual)</p></div>
+        </div>
+        <div class="panel">${barsHtml}</div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <div><h2>Redes sociales</h2><p class="sub">Últimos ${data.rangeDays} días vs. los ${data.rangeDays} días previos — las 6 cuentas conectadas en GHL</p></div>
+        </div>
+        <div class="cards">${cardsHtml}</div>
       </div>
     `;
+    renderLeadsChart(document.getElementById('leads-chart'), data.leadsPerPeriod);
     document.getElementById('foot').textContent = 'Actualizado: ' + new Date(data.generatedAt).toLocaleString('es-PE');
   }
 

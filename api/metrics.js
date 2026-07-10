@@ -40,6 +40,25 @@ async function mapLimit(items, limit, fn) {
   return results;
 }
 
+const DIA_CORTO = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+const MES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+function buildBuckets(days, now) {
+  const daily = days <= 14;
+  const bucketCount = daily ? days : Math.ceil(days / 7);
+  const bucketMs = daily ? 86400000 : 7 * 86400000;
+  const buckets = [];
+  for (let i = bucketCount - 1; i >= 0; i--) {
+    const end = new Date(now.getTime() - i * bucketMs);
+    const start = new Date(end.getTime() - bucketMs);
+    const label = daily
+      ? `${DIA_CORTO[start.getDay()]} ${start.getDate()}`
+      : `${start.getDate()} ${MES_CORTO[start.getMonth()]}`;
+    buckets.push({ start, end, label });
+  }
+  return buckets;
+}
+
 export default async function handler(req, res) {
   if (!process.env.GHL_TOKEN) {
     res.status(500).json({ error: 'Falta GHL_TOKEN en las variables de entorno de Vercel' });
@@ -51,11 +70,8 @@ export default async function handler(req, res) {
   const platforms = platformsParam ? platformsParam.split(',') : undefined;
 
   const now = new Date();
-  const currentStart = new Date(now.getTime() - days * 86400000);
-  const prevStart = new Date(now.getTime() - 2 * days * 86400000);
-
-  const currentRange = { startDate: currentStart.toISOString(), endDate: now.toISOString() };
-  const prevRange = { startDate: prevStart.toISOString(), endDate: currentStart.toISOString() };
+  const currentRange = { startDate: new Date(now.getTime() - days * 86400000).toISOString(), endDate: now.toISOString() };
+  const prevRange = { startDate: new Date(now.getTime() - 2 * days * 86400000).toISOString(), endDate: currentRange.startDate };
 
   try {
     const [contactsPage, pipeData, accResp] = await Promise.all([
@@ -65,6 +81,18 @@ export default async function handler(req, res) {
     ]);
 
     const totalContacts = contactsPage.meta.total;
+
+    // leads nuevos por dia/semana dentro del rango (conteo liviano via filtro de fecha)
+    const buckets = buildBuckets(days, now);
+    const leadsPerPeriod = await mapLimit(buckets, 10, async (b) => {
+      const r = await ghlPost('/contacts/search', {
+        locationId: LOC,
+        pageLimit: 1,
+        filters: [{ field: 'dateAdded', operator: 'range', value: { gte: b.start.toISOString(), lte: b.end.toISOString() } }]
+      });
+      return { label: b.label, total: r.total };
+    });
+    const newLeadsInRange = leadsPerPeriod.reduce((s, b) => s + b.total, 0);
 
     // pipelines: total + por etapa, todo en paralelo (limitado)
     const stageJobs = [];
@@ -88,17 +116,25 @@ export default async function handler(req, res) {
     });
     const pipelines = Object.values(pipelinesMap).sort((a, b) => b.total - a.total);
 
-    // redes sociales
+    // redes sociales, con series por dia/semana que ya trae GHL
     const accounts = accResp.results.accounts || [];
     const social = await mapLimit(accounts, 6, async (acc) => {
       const body = { profileIds: [acc.profileId], currentRange, prevRange };
       if (platforms) body.platforms = platforms;
       const stats = await ghlPost(`/social-media-posting/statistics?locationId=${LOC}`, body);
+      const r = stats.results;
       return {
         platform: acc.platform,
         name: acc.name,
-        totals: stats.results.totals,
-        breakdowns: stats.results.breakdowns
+        totals: r.totals,
+        breakdowns: r.breakdowns,
+        dayRange: r.dayRange,
+        series: {
+          impressions: r.postPerformance?.impressions || [],
+          likes: r.postPerformance?.likes || [],
+          comments: r.postPerformance?.comments || [],
+          followers: r.platformTotals?.followers?.[acc.platform]?.series || []
+        }
       };
     });
 
@@ -107,6 +143,8 @@ export default async function handler(req, res) {
       generatedAt: now.toISOString(),
       rangeDays: days,
       totalContacts,
+      newLeadsInRange,
+      leadsPerPeriod,
       pipelines,
       social
     });
