@@ -287,8 +287,8 @@
           <div class="plat"><span class="dot"></span>${s.platform}</div>
           <div class="acct-name">${s.name}</div>
           <div class="metric-row">
-            <span class="m-lbl">Seguidores</span>
-            <span class="m-right">${sparkline(s.series.followers)}<span class="m-val">${fmt(s.totals.followers)}</span></span>
+            <span class="m-lbl">Seguidores nuevos</span>
+            <span class="m-right">${sparkline(s.series.followers)}<span class="m-val">${s.totals.followers > 0 ? '+' : ''}${fmt(s.totals.followers)}</span></span>
           </div>
           <div class="metric-row">
             <span class="m-lbl">Impresiones</span>
@@ -330,7 +330,7 @@
 
       <div class="section">
         <div class="section-head">
-          <div><h2>Redes sociales</h2><p class="sub">Últimos ${data.rangeDays} días vs. los ${data.rangeDays} días previos — las 6 cuentas conectadas en GHL</p></div>
+          <div><h2>Redes sociales</h2><p class="sub">Últimos ${data.rangeDays} días vs. los ${data.rangeDays} días previos — las 6 cuentas conectadas en GHL. "Seguidores nuevos" es crecimiento del período, no el total acumulado de la cuenta (GHL no expone ese número vía API)</p></div>
         </div>
         <div class="cards">${cardsHtml}</div>
       </div>
