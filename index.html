@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AECODE — Growth Dashboard</title>
+<style>
+  :root {
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-blue:    #2a78d6;
+    --status-good:    #0ca30c;
+    --status-critical:#d03b3b;
+    --status-good-bg: #eaf7ea;
+    --status-crit-bg: #fbebe9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-blue:    #3987e5;
+      --status-good:    #0ca30c;
+      --status-critical:#e66767;
+      --status-good-bg: rgba(12,163,12,0.12);
+      --status-crit-bg: rgba(214,90,90,0.14);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page-plane);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 32px 20px 60px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  .head h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .head p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+
+  .filters {
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; margin: 20px 0 28px;
+  }
+  .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .filter-label { font-size: 12px; color: var(--text-muted); margin-right: 4px; }
+  .chip {
+    font-size: 13px; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-secondary); cursor: pointer; user-select: none;
+  }
+  .chip.active { background: var(--series-blue); color: #fff; border-color: var(--series-blue); }
+  .chip:hover { border-color: var(--series-blue); }
+
+  .kpis { display: flex; gap: 14px; margin-bottom: 32px; flex-wrap: wrap; }
+  .kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; flex: 1; min-width: 200px; }
+  .kpi .lbl { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+  .kpi .val { font-size: 34px; font-weight: 600; letter-spacing: -0.01em; }
+  .kpi .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  .section { margin-bottom: 40px; }
+  .section h2 { font-size: 15px; font-weight: 600; margin: 0 0 3px; }
+  .section .sub { font-size: 13px; color: var(--text-muted); margin: 0 0 16px; }
+
+  .bars { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; padding: 5px 0; }
+  .bar-name { width: 190px; flex-shrink: 0; font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; position: relative; height: 22px; }
+  .bar-fill { position: absolute; left: 0; top: 3px; height: 16px; border-radius: 4px; background: var(--series-blue); min-width: 3px; }
+  .bar-val { width: 64px; text-align: right; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .card .plat { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+  .card .plat .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--series-blue); flex-shrink: 0; }
+  .card .metric-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; }
+  .card .metric-row .m-lbl { font-size: 12px; color: var(--text-muted); }
+  .card .metric-row .m-val { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .delta { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 20px; margin-left: 6px; }
+  .delta.good { color: var(--status-good); background: var(--status-good-bg); }
+  .delta.bad { color: var(--status-critical); background: var(--status-crit-bg); }
+
+  .muted-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .muted-chip { font-size: 12px; color: var(--text-muted); background: var(--surface-1); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; }
+
+  .foot { font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--gridline); padding-top: 14px; margin-top: 8px; }
+  .loading, .error { padding: 40px; text-align: center; color: var(--text-muted); }
+  .error { color: var(--status-critical); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>AECODE — Growth Dashboard</h1>
+    <p>Leads, embudo comercial y redes sociales — fuente: GoHighLevel en vivo (AECODE VENTAS)</p>
+  </div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <span class="filter-label">Rango:</span>
+      <button class="chip" data-days="7">7 días</button>
+      <button class="chip" data-days="30">30 días</button>
+      <button class="chip" data-days="90">90 días</button>
+    </div>
+    <div class="filter-group" id="platform-filters">
+      <span class="filter-label">Redes:</span>
+      <button class="chip active" data-platform="">Todas</button>
+      <button class="chip" data-platform="facebook">Facebook</button>
+      <button class="chip" data-platform="instagram">Instagram</button>
+      <button class="chip" data-platform="linkedin">LinkedIn</button>
+      <button class="chip" data-platform="tiktok">TikTok</button>
+      <button class="chip" data-platform="youtube">YouTube</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="loading">Cargando datos en vivo desde GoHighLevel…</div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+  let state = { days: 7, platform: '' };
+
+  document.querySelectorAll('[data-days]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-days]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.days = parseInt(btn.dataset.days, 10);
+      load();
+    });
+  });
+  document.querySelectorAll('[data-platform]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-platform]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.platform = btn.dataset.platform;
+      load();
+    });
+  });
+  // marca "7 días" activo por defecto
+  document.querySelector('[data-days="7"]').classList.add('active');
+
+  function deltaSpan(v) {
+    const n = parseFloat(v);
+    if (!n || isNaN(n)) return '';
+    const cls = n > 0 ? 'good' : 'bad';
+    const sign = n > 0 ? '+' : '';
+    return `<span class="delta ${cls}">${sign}${n.toFixed(1)}%</span>`;
+  }
+  function fmt(n) { return (n || 0).toLocaleString('es-PE'); }
+
+  function render(data) {
+    const totalOps = data.pipelines.reduce((s, p) => s + p.total, 0);
+    const maxP = Math.max(1, ...data.pipelines.map(p => p.total));
+
+    const barsHtml = data.pipelines.map(p => `
+      <div class="bar-row" title="${p.name}: ${fmt(p.total)} oportunidades">
+        <div class="bar-name">${p.name}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${p.total / maxP * 100}%"></div></div>
+        <div class="bar-val">${fmt(p.total)}</div>
+      </div>
+    `).join('');
+
+    const activeSocial = data.social.filter(s => (s.totals.impressions || 0) + (s.totals.followers || 0) + (s.totals.posts || 0) > 0);
+    const inactiveSocial = data.social.filter(s => !activeSocial.includes(s));
+
+    const cardsHtml = activeSocial.map(s => {
+      const reach = (s.breakdowns.reach && s.breakdowns.reach.total) || 0;
+      const reachChange = (s.breakdowns.reach && s.breakdowns.reach.totalChange) || 0;
+      const impChange = (s.breakdowns.impressions && s.breakdowns.impressions.totalChange) || 0;
+      const engPlatform = s.breakdowns.engagement && s.breakdowns.engagement[s.platform];
+      const engChange = engPlatform ? engPlatform.change : 0;
+      return `
+        <div class="card">
+          <div class="plat"><span class="dot"></span>${s.platform} · <span style="color:var(--text-muted); font-weight:400;">${s.name}</span></div>
+          ${s.totals.followers ? `<div class="metric-row"><span class="m-lbl">Seguidores</span><span class="m-val">${fmt(s.totals.followers)}</span></div>` : ''}
+          <div class="metric-row"><span class="m-lbl">Impresiones</span><span class="m-val">${fmt(s.totals.impressions)} ${deltaSpan(impChange)}</span></div>
+          <div class="metric-row"><span class="m-lbl">Alcance</span><span class="m-val">${fmt(reach)} ${deltaSpan(reachChange)}</span></div>
+          <div class="metric-row"><span class="m-lbl">Engagement</span><span class="m-val">${fmt(s.totals.likes + s.totals.comments)} ${deltaSpan(engChange)}</span></div>
+        </div>
+      `;
+    }).join('');
+
+    const mutedHtml = inactiveSocial.map(s => `<div class="muted-chip">${s.platform} · ${s.name} — sin actividad en este rango</div>`).join('');
+
+    document.getElementById('content').innerHTML = `
+      <div class="kpis">
+        <div class="kpi"><div class="lbl">Contactos totales en CRM</div><div class="val">${fmt(data.totalContacts)}</div><div class="sub">Base histórica acumulada</div></div>
+        <div class="kpi"><div class="lbl">Oportunidades activas</div><div class="val">${fmt(totalOps)}</div><div class="sub">Sumando ${data.pipelines.length} pipelines</div></div>
+        <div class="kpi"><div class="lbl">Rango analizado</div><div class="val">${data.rangeDays}d</div><div class="sub">vs. los ${data.rangeDays} días previos</div></div>
+      </div>
+      <div class="section">
+        <h2>Embudo por pipeline</h2>
+        <p class="sub">Oportunidades activas por pipeline, de mayor a menor volumen (estado actual)</p>
+        <div class="bars">${barsHtml}</div>
+      </div>
+      <div class="section">
+        <h2>Redes sociales</h2>
+        <p class="sub">Últimos ${data.rangeDays} días vs. los ${data.rangeDays} días previos</p>
+        <div class="cards">${cardsHtml || '<p class="sub">Sin actividad en el rango/redes seleccionadas.</p>'}</div>
+        ${mutedHtml ? `<div class="muted-list">${mutedHtml}</div>` : ''}
+      </div>
+    `;
+    document.getElementById('foot').textContent = 'Actualizado: ' + new Date(data.generatedAt).toLocaleString('es-PE');
+  }
+
+  async function load() {
+    document.getElementById('content').innerHTML = '<div class="loading">Cargando datos en vivo desde GoHighLevel…</div>';
+    try {
+      const params = new URLSearchParams({ days: state.days });
+      if (state.platform) params.set('platforms', state.platform);
+      const res = await fetch('/api/metrics?' + params.toString());
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error desconocido');
+      render(data);
+    } catch (err) {
+      document.getElementById('content').innerHTML = `<div class="error">Error cargando datos: ${err.message}</div>`;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
