@@ -10,18 +10,29 @@ function headers() {
   };
 }
 
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+async function withRetry(fn) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fn();
+    if (res.status !== 429) return res;
+    await sleep(400 * Math.pow(2, attempt)); // 400ms, 800ms, 1600ms, 3200ms
+  }
+  return fn();
+}
+
 async function ghlGet(path) {
-  const res = await fetch(GHL_BASE + path, { headers: headers() });
+  const res = await withRetry(() => fetch(GHL_BASE + path, { headers: headers() }));
   if (!res.ok) throw new Error('GHL GET ' + path + ' -> ' + res.status + ': ' + await res.text());
   return res.json();
 }
 
 async function ghlPost(path, body) {
-  const res = await fetch(GHL_BASE + path, {
+  const res = await withRetry(() => fetch(GHL_BASE + path, {
     method: 'POST',
     headers: { ...headers(), 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
-  });
+  }));
   if (!res.ok) throw new Error('GHL POST ' + path + ' -> ' + res.status + ': ' + await res.text());
   return res.json();
 }
@@ -84,7 +95,7 @@ export default async function handler(req, res) {
 
     // leads nuevos por dia/semana dentro del rango (conteo liviano via filtro de fecha)
     const buckets = buildBuckets(days, now);
-    const leadsPerPeriod = await mapLimit(buckets, 10, async (b) => {
+    const leadsPerPeriod = await mapLimit(buckets, 6, async (b) => {
       const r = await ghlPost('/contacts/search', {
         locationId: LOC,
         pageLimit: 1,
@@ -101,7 +112,7 @@ export default async function handler(req, res) {
         stageJobs.push({ pipelineId: p.id, pipelineName: p.name, stageId: st.id, stageName: st.name });
       });
     });
-    const stageResults = await mapLimit(stageJobs, 15, async (job) => {
+    const stageResults = await mapLimit(stageJobs, 8, async (job) => {
       const r = await ghlGet(
         `/opportunities/search?location_id=${LOC}&pipeline_id=${job.pipelineId}&pipeline_stage_id=${job.stageId}&limit=1`
       );
