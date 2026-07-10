@@ -105,27 +105,13 @@ export default async function handler(req, res) {
     });
     const newLeadsInRange = leadsPerPeriod.reduce((s, b) => s + b.total, 0);
 
-    // pipelines: total + por etapa, todo en paralelo (limitado)
-    const stageJobs = [];
-    pipeData.pipelines.forEach((p) => {
-      p.stages.forEach((st) => {
-        stageJobs.push({ pipelineId: p.id, pipelineName: p.name, stageId: st.id, stageName: st.name });
-      });
+    // pipelines: solo el total por pipeline (el frontend no usa el detalle por etapa,
+    // y pedirlo por etapa multiplicaba las llamadas a GHL x9 y disparaba 429)
+    const pipelineResults = await mapLimit(pipeData.pipelines, 6, async (p) => {
+      const r = await ghlGet(`/opportunities/search?location_id=${LOC}&pipeline_id=${p.id}&limit=1`);
+      return { name: p.name, total: r.meta.total };
     });
-    const stageResults = await mapLimit(stageJobs, 8, async (job) => {
-      const r = await ghlGet(
-        `/opportunities/search?location_id=${LOC}&pipeline_id=${job.pipelineId}&pipeline_stage_id=${job.stageId}&limit=1`
-      );
-      return { ...job, total: r.meta.total };
-    });
-
-    const pipelinesMap = {};
-    stageResults.forEach((r) => {
-      if (!pipelinesMap[r.pipelineName]) pipelinesMap[r.pipelineName] = { name: r.pipelineName, total: 0, stages: [] };
-      pipelinesMap[r.pipelineName].stages.push({ name: r.stageName, total: r.total });
-      pipelinesMap[r.pipelineName].total += r.total;
-    });
-    const pipelines = Object.values(pipelinesMap).sort((a, b) => b.total - a.total);
+    const pipelines = pipelineResults.sort((a, b) => b.total - a.total);
 
     // redes sociales, con series por dia/semana que ya trae GHL
     const accounts = accResp.results.accounts || [];
@@ -149,7 +135,7 @@ export default async function handler(req, res) {
       };
     });
 
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=180');
+    res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=300');
     res.status(200).json({
       generatedAt: now.toISOString(),
       rangeDays: days,
