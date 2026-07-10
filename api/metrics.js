@@ -79,6 +79,7 @@ export default async function handler(req, res) {
   const days = Math.max(1, parseInt(req.query.days || '7', 10));
   const platformsParam = (req.query.platforms || '').trim();
   const platforms = platformsParam ? platformsParam.split(',') : undefined;
+  const pipelineFilter = (req.query.pipelineId || '').trim();
 
   const now = new Date();
   const currentRange = { startDate: new Date(now.getTime() - days * 86400000).toISOString(), endDate: now.toISOString() };
@@ -93,27 +94,25 @@ export default async function handler(req, res) {
 
     const totalContacts = contactsPage.meta.total;
 
-    // leads nuevos por dia/semana dentro del rango (conteo liviano via filtro de fecha)
+    // leads (oportunidades) nuevas por dia/semana, filtrable por pipeline/campaña
     const buckets = buildBuckets(days, now);
     const leadsPerPeriod = await mapLimit(buckets, 6, async (b) => {
-      const r = await ghlPost('/contacts/search', {
-        locationId: LOC,
-        pageLimit: 1,
-        filters: [{ field: 'dateAdded', operator: 'range', value: { gte: b.start.toISOString(), lte: b.end.toISOString() } }]
-      });
-      return { label: b.label, total: r.total };
+      const pipeParam = pipelineFilter ? `&pipeline_id=${pipelineFilter}` : '';
+      const r = await ghlGet(
+        `/opportunities/search?location_id=${LOC}${pipeParam}&date=${b.start.getTime()}&endDate=${b.end.getTime()}&limit=1`
+      );
+      return { label: b.label, total: r.meta.total };
     });
     const newLeadsInRange = leadsPerPeriod.reduce((s, b) => s + b.total, 0);
 
-    // pipelines: solo el total por pipeline (el frontend no usa el detalle por etapa,
-    // y pedirlo por etapa multiplicaba las llamadas a GHL x9 y disparaba 429)
+    // pipelines: total por pipeline (para el embudo y para poblar el filtro de campaña)
     const pipelineResults = await mapLimit(pipeData.pipelines, 6, async (p) => {
       const r = await ghlGet(`/opportunities/search?location_id=${LOC}&pipeline_id=${p.id}&limit=1`);
-      return { name: p.name, total: r.meta.total };
+      return { id: p.id, name: p.name, total: r.meta.total };
     });
     const pipelines = pipelineResults.sort((a, b) => b.total - a.total);
 
-    // redes sociales, con series por dia/semana que ya trae GHL
+    // redes sociales: series por dia/semana + demografia que ya trae GHL
     const accounts = accResp.results.accounts || [];
     const social = await mapLimit(accounts, 6, async (acc) => {
       const body = { profileIds: [acc.profileId], currentRange, prevRange };
@@ -126,6 +125,8 @@ export default async function handler(req, res) {
         totals: r.totals,
         breakdowns: r.breakdowns,
         dayRange: r.dayRange,
+        grouping: r.grouping,
+        demographics: r.demographics,
         series: {
           impressions: r.postPerformance?.impressions || [],
           likes: r.postPerformance?.likes || [],
